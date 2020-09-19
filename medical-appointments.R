@@ -2,6 +2,7 @@
 # PREREQUISITES, READING IN DATA SET, AND TIDYING DATA
 #=============================================================================================================================================================================================================================
 
+# PREREQS:
 rm(list = ls()) #removes all variables stored previously in Environment (good habit to include)
 
 library(Rmisc) # transform integers to factors, must be first or will mask other packages. We only need multiplot!
@@ -13,25 +14,16 @@ library(tidyverse) #Run tidyverse, if you do not have: install.packages("tidyver
 
 #https://www.kaggle.com/joniarroba/noshowappointments
 
-#read the data set into RStudio and store into an object
+#READ DATA SET AND STORE INTO OBJECT:
 data <- read.csv("C:/Users/Kevin/Desktop/Medical-Appointments/KaggleV2-May-2016.csv")
 
 ma_data <- as.tibble(data)
 
-# NEED TO REALLY TIDY DATA:
+# TIDY DATA: --DONE--
 # change formatting of patient id - won't fit, leave as is
 # ensure the date and time is in correct format for scheduled day and appointment day - done!
 # correct neighborhood names - not going to use column, so will filter out
 # check what the zeroes and ones mean! - 0 means false and 1 means true
-# What does Scholarship mean? in the data set
-
-# POtential research and analysis opportunities:
-# male vs female with no show rates
-# scheduling far in advance cause more no shows?
-# morning vs afternoon appointments. which have more no shows? - cannot do since no times for appointments.
-# age and likelihood of no showing
-# scholarship:SMS received, what do they mean and how do they relate to no shows?
-# Can use linear regression model again since it is either a no show or a show (binomial)!
 
 # TIDYING DATA SET: fix columns(renaming and class), fixing date-times within columns.
 ma_data <- rename(ma_data, Hypertension = Hipertension) #fixed spelling for this column
@@ -44,9 +36,135 @@ ma_data$Handcap <- as.factor(ma_data$Handcap)
 ma_data$SMS_received <- as.factor(ma_data$SMS_received)
 ma_data$No.show <- as.factor(ma_data$No.show)
 
-# Fixing the dates, it looks like it is organized as YYYY-MM-DD what is T and what is Z?
+# Fixing the dates, it looks like it is organized as YYYY-MM-DD HMS
 ma_data$ScheduledDay <- parse_date_time(ma_data$ScheduledDay, "Ymd HMS")
 ma_data$AppointmentDay <- parse_date_time(ma_data$AppointmentDay, "Ymd HMS") #No times only the day of appointment
+
+ma_data <- ma_data %>%
+  select(-Neighbourhood)
+
+#=============================================================================================================================================================================================================================
+# ANALYSIS & INITIAL BRAINSTORM
+#=============================================================================================================================================================================================================================
+
+# POtential research and analysis opportunities: (**) = green light analysis & (xx) = red light (cannot do it)
+# ** male vs female with no show rates
+# xx morning vs afternoon appointments. which have more no shows? - cannot do since no times for appointments.
+# ** age and likelihood of no showing
+# ** Can use linear regression model again since it is either a no show or a show (binomial)!
+# What does Scholarship mean? - The scholarship is called Bolsa Familia and it is a social welfare program of the Brazilian Government. It provides financial aid to poor families as long as they have children that attend school and are vaccinated.
+# If the student is dropped from the school program, by exceed total permitted school absences, funds are suspended. The scholarship whether True (they have it) or FALSE (they don't have it) could affect the ability to afford medical tx which could affect no show rates.
+# ** Taking the differences between days and seeing the correlation of no shows based on the length of time between scheduled and appointment day!
+
+#Start with glimpse() and see what you are working with! - start making it into a habit
+
+glimpse(ma_data) # taking a glimpse of our data, the classes and columns are accurate
+
+#Pearson's correlation would not be good for this data since the variables are not continuous integers and are factors.
+# PCA would not be used either for the same reason.
+# We can dive into analyzing it by variable and seeing how it relates to no.shows. No meaning they showed up and yes meaning they did not show
+# 1. Gender, 2. Appointment difference, 3. age, 4. scholarship:SMS received - create function to run analysis and plots and multiplot them together.
+
+#=============================================================================================================================================================================================================================
+# 1. GENDER
+#=============================================================================================================================================================================================================================
+
+# Let's run a bar plot and show the number of males vs females that made an appointment and within that a stack of who showed and did not show.
+gender_stack <- ggplot(ma_data, aes(x = Gender, fill = No.show)) +
+  geom_bar(position = "stack")
+
+gender_fill <- ggplot(ma_data, aes(x = Gender, fill = No.show)) +
+geom_bar(position = "fill")
+
+multiplot(gender_stack, gender_fill, cols = 2)
+# We can see that the majority of appointments are made by females.
+
+ma_data %>%
+  group_by(Gender, No.show) %>%
+  summarize(count = n())
+# Within this data set there are 71,840 female appointments and 38,687 male appointments.
+# Looking at the proportions of who does and does not show up, both female and males are even at 20%.
+# Therefore, gender is not a good predictor of no show rates as there is no significant difference between the two.
+
+#=============================================================================================================================================================================================================================
+# 2. APPOINTMENT DIFFERENCES - NO SHOW RATE - HISTOGRAM - NUMBER OF DAYS PASSED VS NUMBER OF NO SHOWS
+#=============================================================================================================================================================================================================================
+
+# Let's take the difference between the dates and see if there is a correlation between the more days that pass the higher the rate of no shows.
+
+date_data <- ma_data %>%
+  select(ScheduledDay, AppointmentDay, No.show) %>%
+  mutate(diffdays = abs(difftime(AppointmentDay, ScheduledDay, units = "days"))) # took the difference between the two dates to see how long it has been since they set the appointment and the actual appointment day. Absolute value was taken since you can't have an appointment before scheduling one.
+
+ggplot(date_data, aes(x = diffdays, fill = No.show)) +
+  geom_histogram()
+# This graph shows us that the majority of the appointments are set on the same day (roughly zero days in between)
+# Let's zoom in and see where most of the no shows are!
+
+ggplot(date_data, aes(x = diffdays, fill = No.show)) +
+  geom_histogram() +
+  coord_cartesian(xlim = c(0, 180), ylim = c(0, 6000))
+# At first glance, it seems that in this zoomed graph, the majority of our no shows happen when a patient schedules on the same day or for the next 1-2 days.
+# and as patients schedule for appointments further in advance, the no shows start to decline.
+
+ggplot(date_data, aes(x = diffdays, fill = No.show)) +
+  geom_histogram(position = "fill")
+# However, after looking at the proportions, we see something entirely different.
+# We see that the no show rates are relatively low if you schedule appointments and have your appointments within 120 days (4 months).
+# Within 4 months the no show rates are less than 40%. 
+# In contrast, those that have appointments set for far in the future (greater than 120 days), there is a huge spike in those who no show. Which is greater than 50%
+
+# Therefore, when analyzing appointment and the actual appointment date in regards to no shows. There is a higher liklihood of individuals to no show if they set an appointment greater than 4 months in advance
+# Also that most appointments set (within this data set) is scheduled for the same day.
+
+#=============================================================================================================================================================================================================================
+# 3. AGE AND NO SHOWS
+#=============================================================================================================================================================================================================================
+
+# Is there correlation between your age and the rate you show up to your appointments? Or is there a particular age group that is known not to show up to their scheduled appointments?
+# Are younger patients less dependable than older patients?
+
+# histogram for age and noshows - similar plotting as date_data
+# The Age variable is measured in years, those that are less than 1 year old will fall within the zero bin
+
+ggplot(ma_data, aes(x = Age, fill = No.show)) +
+  geom_histogram()
+# Within this portion of the analysis, most patients that are going for their appointment is less than 1 year old. Most likely, accompanied by their parent/gaurdian
+
+ggplot(ma_data, aes(x = Age, fill = No.show)) +
+  geom_histogram(bins = 100) +
+  coord_cartesian(xlim = c(0, 100), ylim = c(0, 800))
+# After zooming into the plot and increasing the number of bins to represent 1 year per bin.
+# We see that no shows begin to dip between the ages of zero years to 12 years old (most likely because parents are taking their children to their doctor's appointment)
+# however, the no shows begin to spike and maintain in the range of 20-30 years of age. (of age to be responsible for your own doctor's appointments)
+# However, beyond 30 years of age, there is a negative trend of no shows as age progresses.
+
+ggplot(ma_data, aes(x = Age, fill = No.show)) +
+  geom_histogram(bins = 100, position = "fill")
+# We see a similar trend as above, but in regards to proportions.
+# There is however a spike of noshows after the age of 90. There could be reasons for this as well (maybe appointments were set in advance for these older patient but passed before they could attend appointment)
+
+age_date_data <- ma_data %>%
+  select(ScheduledDay, AppointmentDay, Age, No.show) %>%
+  mutate(diffdays = abs(difftime(AppointmentDay, ScheduledDay, units = "days")))
+
+ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
+  geom_point(position = "jitter") +
+  coord_cartesian(ylim = c(90, 120))
+# Can include, but this shows us that 90+ year old patients will schedule appointments between 0-50 days in advance.
+
+ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
+  geom_point(position = "jitter") +
+  coord_cartesian(xlim = c(0, 40), ylim = c(90, 120))
+# Here is a zoomed in version of the above scatter plot to visualize appointments set in 0-50 days in advance
+
+
+
+
+
+
+
+
 
 
 
