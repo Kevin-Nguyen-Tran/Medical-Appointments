@@ -72,10 +72,24 @@ glimpse(ma_data) # taking a glimpse of our data, the classes and columns are acc
 
 # Let's run a bar plot and show the number of males vs females that made an appointment and within that a stack of who showed and did not show.
 gender_stack <- ggplot(ma_data, aes(x = Gender, fill = No.show)) +
-  geom_bar(position = "stack")
+  geom_bar(position = "stack") +
+  labs(x = "Gender", 
+       y = "Count",
+       title = "More Female Appointments than Male Appointments",
+       subtitle = "F = Female & M = Male",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 gender_fill <- ggplot(ma_data, aes(x = Gender, fill = No.show)) +
-geom_bar(position = "fill")
+geom_bar(position = "fill") +
+  labs(x = "Gender", 
+       y = "Rate",
+       title = "No Show Rates are the Same Despite Gender",
+       subtitle = "F = Female & M = Male",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 
 multiplot(gender_stack, gender_fill, cols = 2)
 # We can see that the majority of appointments are made by females.
@@ -98,18 +112,37 @@ date_data <- ma_data %>%
   mutate(diffdays = abs(difftime(AppointmentDay, ScheduledDay, units = "days"))) # took the difference between the two dates to see how long it has been since they set the appointment and the actual appointment day. Absolute value was taken since you can't have an appointment before scheduling one.
 
 ggplot(date_data, aes(x = diffdays, fill = No.show)) +
-  geom_histogram()
+  geom_histogram() +
+  labs(x = "# of Days Appointment was Scheduled in Advance", 
+       y = "Count",
+       title = "Most Appointments Scheduled for the Same Day",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 # This graph shows us that the majority of the appointments are set on the same day (roughly zero days in between)
 # Let's zoom in and see where most of the no shows are!
 
 ggplot(date_data, aes(x = diffdays, fill = No.show)) +
   geom_histogram() +
-  coord_cartesian(xlim = c(0, 180), ylim = c(0, 6000))
+  coord_cartesian(xlim = c(0, 180), ylim = c(0, 6000)) +
+  labs(x = "# of Days Appointment was Scheduled in Advance", 
+       y = "Count",
+       title = "Same Day Appointments Have High No Show Counts",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 # At first glance, it seems that in this zoomed graph, the majority of our no shows happen when a patient schedules on the same day or for the next 1-2 days.
 # and as patients schedule for appointments further in advance, the no shows start to decline.
 
 ggplot(date_data, aes(x = diffdays, fill = No.show)) +
-  geom_histogram(position = "fill")
+  geom_histogram(position = "fill") +
+  labs(x = "# of Days Appointment was Scheduled in Advance", 
+       y = "Rate",
+       title = "No Show Rates are Lower for Same Day Appointments",
+       subtitle = "Higher Likelihood of No Show after 4 Months of Advance Scheduling",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 # However, after looking at the proportions, we see something entirely different.
 # We see that the no show rates are relatively low if you schedule appointments and have your appointments within 120 days (4 months).
 # Within 4 months the no show rates are less than 40%. 
@@ -129,19 +162,40 @@ ggplot(date_data, aes(x = diffdays, fill = No.show)) +
 # The Age variable is measured in years, those that are less than 1 year old will fall within the zero bin
 
 ggplot(ma_data, aes(x = Age, fill = No.show)) +
-  geom_histogram()
-# Within this portion of the analysis, most patients that are going for their appointment is less than 1 year old. Most likely, accompanied by their parent/gaurdian
+  geom_histogram() +
+  labs(x = "Age", 
+       y = "Count",
+       title = "Most Appointments are Scheduled for Children and Adults",
+       subtitle = "Children Age Range: 0-5 years old & Adults Age Range: 30-60 years old",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+# Within this portion of the analysis, most patients that are going for their appointment is less than 1 year old. Most likely, accompanied by their parent/gaurdian and between the age of 30-60 years old.
 
 ggplot(ma_data, aes(x = Age, fill = No.show)) +
   geom_histogram(bins = 100) +
-  coord_cartesian(xlim = c(0, 100), ylim = c(0, 800))
+  coord_cartesian(xlim = c(0, 100), ylim = c(0, 800)) +
+  labs(x = "Age", 
+       y = "Count",
+       title = "No Shows are Most Apparent in Adults",
+       subtitle = "Adults in the Age Range: 20-30 years old",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 # After zooming into the plot and increasing the number of bins to represent 1 year per bin.
 # We see that no shows begin to dip between the ages of zero years to 12 years old (most likely because parents are taking their children to their doctor's appointment)
 # however, the no shows begin to spike and maintain in the range of 20-30 years of age. (of age to be responsible for your own doctor's appointments)
 # However, beyond 30 years of age, there is a negative trend of no shows as age progresses.
 
 ggplot(ma_data, aes(x = Age, fill = No.show)) +
-  geom_histogram(bins = 100, position = "fill")
+  geom_histogram(bins = 100, position = "fill") +
+  labs(x = "Age", 
+       y = "Rate",
+       title = "No Shows are Most Apparent in Adults",
+       subtitle = "Adults in the Age Range: 20-30 years old",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 # We see a similar trend as above, but in regards to proportions.
 # There is however a spike of noshows after the age of 90. There could be reasons for this as well (maybe appointments were set in advance for these older patient but passed before they could attend appointment)
 
@@ -151,12 +205,26 @@ age_date_data <- ma_data %>%
 
 ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
   geom_point(position = "jitter") +
-  coord_cartesian(ylim = c(90, 120))
+  coord_cartesian(ylim = c(90, 120)) +
+  labs(x = "# of Days Appointment was Scheduled in Advance", 
+       y = "Age",
+       title = "Patients Above the Age of 90",
+       subtitle = "Mainly will Schedule Appointments 0-50 days in Advance",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 # Can include, but this shows us that 90+ year old patients will schedule appointments between 0-50 days in advance.
 
 ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
   geom_point(position = "jitter") +
-  coord_cartesian(xlim = c(0, 40), ylim = c(90, 120))
+  coord_cartesian(xlim = c(0, 40), ylim = c(90, 120)) +
+  labs(x = "# of Days Appointment was Scheduled in Advance", 
+       y = "Age",
+       title = "Patients Above the Age of 90",
+       subtitle = "Mainly will Schedule Appointments 0-50 days in Advance",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 # Here is a zoomed in version of the above scatter plot to visualize appointments set in 0-50 days in advance
 
 #=============================================================================================================================================================================================================================
