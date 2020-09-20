@@ -63,6 +63,7 @@ glimpse(ma_data) # taking a glimpse of our data, the classes and columns are acc
 #Pearson's correlation would not be good for this data since the variables are not continuous integers and are factors.
 # PCA would not be used either for the same reason.
 # We can dive into analyzing it by variable and seeing how it relates to no.shows. No meaning they showed up and yes meaning they did not show
+# see which variables are good predictors of no shows. (Regression model?)
 # 1. Gender, 2. Appointment difference, 3. age, 4. scholarship:SMS received - create function to run analysis and plots and multiplot them together.
 
 #=============================================================================================================================================================================================================================
@@ -157,6 +158,153 @@ ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
   geom_point(position = "jitter") +
   coord_cartesian(xlim = c(0, 40), ylim = c(90, 120))
 # Here is a zoomed in version of the above scatter plot to visualize appointments set in 0-50 days in advance
+
+#=============================================================================================================================================================================================================================
+# 4. BINARY VARIABLES - BAR CHARTS AND MULTIPLOT - WRITE FUNCTION FOR ALL BAR PLOTS
+#=============================================================================================================================================================================================================================
+
+# use this section to practice writing a function so you're not copying and pasting the plots
+# is this possible? writing a function for creating plots?
+
+
+# COUNTS FUNTION
+
+binary_plot <- function(df, vect){
+  ggplot(data, aes(x = vect, fill = No.show)) +
+    geom_bar() +
+    scale_x_discrete(limits = c("0", "1"),
+                     labels = c("Doesn't\nHave", "Has"))
+} # function to make plots for the desired vector within our data set
+
+scholar_plot <- binary_plot(ma_data, ma_data$Scholarship) +
+  labs(x = "Scholarship", 
+       y = "Count",
+       title = "Scholarship and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+hypertension_plot <- binary_plot(ma_data, ma_data$Hypertension)+
+  labs(x = "Hypertension", 
+       y = "Count",
+       title = "Hypertension and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+diabetes_plot <- binary_plot(ma_data, ma_data$Diabetes)+
+  labs(x = "Diabetes", 
+       y = "Count",
+       title = "Diabetes and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+alcoholism_plot <- binary_plot(ma_data, ma_data$Alcoholism)+
+  labs(x = "Alcoholism", 
+       y = "Count",
+       title = "Alcoholism and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+handcap_plot <- binary_plot(ma_data, ma_data$Handcap)+
+  labs(x = "Handicap Disability", 
+       y = "Count",
+       title = "Handicap and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+sms_plot <- binary_plot(ma_data, ma_data$SMS_received)+
+  labs(x = "SMS Message", 
+       y = "Count",
+       title = "SMS Message and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+multiplot(scholar_plot, hypertension_plot, diabetes_plot, alcoholism_plot, handcap_plot, sms_plot, cols = 2)
+
+# PROPORTIONS FUNCTION
+
+binary_plot2 <- function(df, vect){
+  ggplot(data, aes(x = vect, fill = No.show)) +
+    geom_bar(position = "fill") +
+    scale_x_discrete(limits = c("0", "1"),
+                     labels = c("Doesn't\nHave", "Has"))
+}
+
+scholar_plot2 <- binary_plot2(ma_data, ma_data$Scholarship)+
+  labs(x = "Scholarship", 
+       y = "Rate",
+       title = "Scholarship Not Effective for No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+hypternsion_plot2 <- binary_plot2(ma_data, ma_data$Hypertension)+
+  labs(x = "Hypertension", 
+       y = "Rate",
+       title = "Hypertensive Pts have Slightly Lower No Show",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+diabetes_plot2 <- binary_plot2(ma_data, ma_data$Diabetes) +
+  labs(x = "Diabetes", 
+       y = "Rate",
+       title = "Diabetic Pts have Slightly Lower No Show",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+alcoholism_plot2 <- binary_plot2(ma_data, ma_data$Alcoholism) +
+  labs(x = "Alcoholism", 
+       y = "Rate",
+       title = "Alcoholism Not a Good Indicator for No Show",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+handcap_plot2 <- binary_plot2(ma_data, ma_data$Handcap) +
+  labs(x = "Handicap Disability", 
+       y = "Rate",
+       title = "Handicap Pts have Slightly Lower No Show",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+sms_plot2 <- binary_plot2(ma_data, ma_data$SMS_received)+
+  labs(x = "SMS Message", 
+       y = "Rate",
+       title = "SMS Messages Do Not Improve No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+multiplot(scholar_plot2, hypternsion_plot2, diabetes_plot2, alcoholism_plot2, handcap_plot2, sms_plot2, cols = 2)
+
+# Looking at the proportions of patients with or without the binary variables, we can see if there are trends that we can observe.
+# As seen in Scholarships and SMS messages sent to the patient, it does not improve no show rates. Patients with children who have financial aid via scholarships have a higher rate of no shows than those without it. Also, patients who opted to receive sms message reminders of appointments had a higher no show rate.
+# Patients with and without alcoholism show that there is an equal no show rate (so whether or not a person is an alcoholic does not indicate showing up or no showing to an appointment)
+# Lastly, patients with preconceived health conditions such as hypertension and diabetes, and disabilities such as being handicapped, show to have lower no show rates.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
