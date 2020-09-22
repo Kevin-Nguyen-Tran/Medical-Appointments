@@ -1,0 +1,399 @@
+---
+title: "Medical Appointment No Show Report"
+author: "Kevin Tran"
+date: "9/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# PREREQS:
+rm(list = ls()) #removes all variables stored previously in Environment (good habit to include)
+
+library(Rmisc) # transform integers to factors, must be first or will mask other packages. We only need multiplot!
+library(lubridate) #to modify date-time entries, if you do not have it: install.packages("lubridate")
+library(scales) #allows to modify scientific notation for values
+library(dplyr)
+library(wesanderson)
+library(tidyverse) #Run tidyverse, if you do not have: install.packages("tidyverse")
+
+#https://www.kaggle.com/joniarroba/noshowappointments
+
+#READ DATA SET AND STORE INTO OBJECT:
+data <- read.csv("C:/Users/Kevin/Desktop/Medical-Appointments/KaggleV2-May-2016.csv")
+
+ma_data <- as.tibble(data)
+
+# TIDY DATA: --DONE--
+# change formatting of patient id - won't fit, leave as is
+# ensure the date and time is in correct format for scheduled day and appointment day - done!
+# correct neighborhood names - not going to use column, so will filter out
+# check what the zeroes and ones mean! - 0 means false and 1 means true
+
+# TIDYING DATA SET: fix columns(renaming and class), fixing date-times within columns.
+ma_data <- rename(ma_data, Hypertension = Hipertension) #fixed spelling for this column
+
+ma_data$Scholarship <- as.factor(ma_data$Scholarship) #All columns that are factors have been updated as being so!
+ma_data$Hypertension <- as.factor(ma_data$Hypertension)
+ma_data$Diabetes <- as.factor(ma_data$Diabetes)
+ma_data$Alcoholism <- as.factor(ma_data$Alcoholism)
+ma_data$Handcap <- as.factor(ma_data$Handcap)
+ma_data$SMS_received <- as.factor(ma_data$SMS_received)
+ma_data$No.show <- as.factor(ma_data$No.show)
+
+# Fixing the dates, it looks like it is organized as YYYY-MM-DD HMS
+ma_data$ScheduledDay <- parse_date_time(ma_data$ScheduledDay, "Ymd HMS")
+ma_data$AppointmentDay <- parse_date_time(ma_data$AppointmentDay, "Ymd HMS") #No times only the day of appointment
+
+ma_data <- ma_data %>%
+  select(-Neighbourhood)
+
+```
+
+## Abstract
+
+Start with a glimpse of the data and see what you are working with!
+
+```{r}
+glimpse(ma_data) # taking a glimpse of our data, the classes and columns are accurate
+```
+
+## Gender and No Show Rates
+
+**Let's run a bar plot and visualize the number of males vs females that made an appointment and within that a proportion of who showed and did not show to their appointment:**
+
+```{r}
+gender_stack <- ggplot(ma_data, aes(x = Gender, fill = No.show)) +
+  geom_bar(position = "stack") +
+  labs(x = "Gender", 
+       y = "Count",
+       title = "More Female Appointments than Male Appointments",
+       subtitle = "F = Female & M = Male",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+gender_fill <- ggplot(ma_data, aes(x = Gender, fill = No.show)) +
+geom_bar(position = "fill") +
+  labs(x = "Gender", 
+       y = "Rate",
+       title = "No Show Rates are the Same Despite Gender",
+       subtitle = "F = Female & M = Male",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+multiplot(gender_stack, gender_fill, cols = 2)
+```
+
+
+
+```{r}
+ma_data %>%
+  group_by(Gender, No.show) %>%
+  summarize(count = n())
+```
+
+* We can see that more appointments are made by females than males.
+  * Within this data set there are 71,840 female appointments and 38,687 male appointments.
+
+* Looking at the proportions of who does and does not show up, both female and males are even at 20%.
+
+* Therefore, gender is not a good predictor of no show rates as there is no significant difference between the two.
+
+## Number of Days Appointments are Scheduled in Advance vs Rate of No Shows
+
+Next, we will explore if scheduling an appointment in advance affects the rate of no shows. To do this, we will take the absolute difference of the date of the appointment and the date the appointment was scheduled.
+
+```{r}
+date_data <- ma_data %>%
+  select(ScheduledDay, AppointmentDay, No.show) %>%
+  mutate(diffdays = abs(difftime(AppointmentDay, ScheduledDay, units = "days"))) # took the difference between the two dates to see how long it has been since they set the appointment and the actual appointment day. Absolute value was taken since you can't have an appointment before scheduling one.
+```
+
+Now that we have the data set we want to explore, let's visualize the difference with a histogram (since we have a numerical x variable).
+
+```{r}
+ggplot(date_data, aes(x = diffdays, fill = No.show)) +
+  geom_histogram() +
+  labs(x = "# of Days Appointment was Scheduled in Advance", 
+       y = "Count",
+       title = "Most Appointments Scheduled for the Same Day",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+* This graph shows us that the majority of the appointments are set on the same day (roughly zero days in between)
+
+**Let's zoom in and see where most of the no shows are by setting our x limits and y limits!**
+
+```{r}
+ggplot(date_data, aes(x = diffdays, fill = No.show)) +
+  geom_histogram() +
+  coord_cartesian(xlim = c(0, 180), ylim = c(0, 6000)) +
+  labs(x = "# of Days Appointment was Scheduled in Advance", 
+       y = "Count",
+       title = "Same Day Appointments Have High No Show Counts",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+* At first glance, it seems that in this zoomed plot, the majority of our no shows happen when a patient schedules on the same day or for the next 1-2 days and as patients schedule for appointments further in advance, the no shows start to decline.
+
+**However, after looking at the proportions, we see something entirely different.**
+
+```{r}
+ggplot(date_data, aes(x = diffdays, fill = No.show)) +
+  geom_histogram(position = "fill") +
+  labs(x = "# of Days Appointment was Scheduled in Advance", 
+       y = "Rate",
+       title = "No Show Rates are Lower for Same Day Appointments",
+       subtitle = "Higher Likelihood of No Show after 4 Months of Advance Scheduling",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+* We see that the no show rates are relatively low if you schedule appointments and have your appointments within 120 days (4 months).
+  * Within 4 months the no show rates are less than 40%. 
+
+* In contrast, those that have appointments set for far in the future (greater than 120 days), there is a huge spike in those who no show. 
+  *Which is greater than 50%
+
+* Therefore, when analyzing appointments and the actual appointment date in regards to no shows. 
+  * There is a higher likelihood of individuals to no show if they set an appointment greater than 4 months in advance
+
+## Age and No Show Rates
+
+We are going to explore the correlation between age/age groups and the rate at which they show or do not show to their appointment. 
+
+We want to answer if there is a particular age group that is predicted to not show up to their scheduled appointment and answer if younger patients are less dependable than older patients.
+
+Keep in Mind:
+* The Age variable is measured in years, those that are less than 1 year old will fall within the zero bin
+
+```{r}
+ggplot(ma_data, aes(x = Age, fill = No.show)) +
+  geom_histogram() +
+  labs(x = "Age", 
+       y = "Count",
+       title = "Most Appointments are Scheduled for Children and Adults",
+       subtitle = "Children Age Range: 0-5 years old & Adults Age Range: 30-60 years old",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+* Within this section of the analysis, most patients that have an appointment is less than 1 year old. Most likely, accompanied by their parent/guardian and patients between the age of 30-60 years old.
+
+**Now let's zoom into the plot and analyze the number of no shows:** 
+*We have increased the number of bins to represent 1 year per bin for easy interpretation*
+
+```{r}
+ggplot(ma_data, aes(x = Age, fill = No.show)) +
+  geom_histogram(bins = 100) +
+  coord_cartesian(xlim = c(0, 100), ylim = c(0, 800)) +
+  labs(x = "Age", 
+       y = "Count",
+       title = "No Shows are Most Apparent in Adults",
+       subtitle = "Adults in the Age Range: 20-30 years old",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+* We see that no shows begin to dip between the ages of zero years to 12 years old (most likely because parents are taking their children to their doctor's appointment)
+
+* However, the no shows begin to spike and maintain in the range of 20-30 years of age. (of age to be responsible for your own doctor's appointments)
+
+* However, beyond 30 years of age, there is a negative trend of no shows as age progresses.
+
+**Now let's look at the proportions:**
+```{r}
+ggplot(ma_data, aes(x = Age, fill = No.show)) +
+  geom_histogram(bins = 100, position = "fill") +
+  labs(x = "Age", 
+       y = "Rate",
+       title = "No Shows are Most Apparent in Adults",
+       subtitle = "Adults in the Age Range: 20-30 years old",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+* We see a similar trend as above, but in regards to proportions.
+  * There is however a spike of no shows after the age of 90. There could be reasons for this as well (maybe appointments were set in advance for these older patient but passed before they could attend their appointment)
+
+*We can explore this further by analyzing the spread of days a patient, above the age of 90, will schedule an appointment in advance.*
+
+```{r}
+age_date_data <- ma_data %>%
+  select(ScheduledDay, AppointmentDay, Age, No.show) %>%
+  mutate(diffdays = abs(difftime(AppointmentDay, ScheduledDay, units = "days")))
+
+ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
+  geom_point(position = "jitter") +
+  coord_cartesian(ylim = c(90, 120)) +
+  labs(x = "# of Days Appointment was Scheduled in Advance", 
+       y = "Age",
+       title = "Patients Above the Age of 90",
+       subtitle = "Mainly will Schedule Appointments 0-50 days in Advance",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
+  geom_point(position = "jitter") +
+  coord_cartesian(xlim = c(0, 40), ylim = c(90, 120)) +
+  labs(x = "# of Days Appointment was Scheduled in Advance", 
+       y = "Age",
+       title = "Patients Above the Age of 90",
+       subtitle = "Mainly will Schedule Appointments 0-50 days in Advance",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+* As seen above, patients above the age of 90 will normally schedule appointments 0-50 days in advance.
+
+* The amount of no shows are spread quite evenly within the 50 days.
+
+## Binary Variables within the Data Set and Their Relationship to No Shows
+
+Within our data set there are siz binary variables that we are going to explore. We are going to see if having financial aid via scholarships, preconceived health conditions, or SMS Messages sent will affect the rate of no shows.
+
+We will first explore each binary variable and their effects on the total number of no shows and then the rate of no shows.
+
+```{r}
+binary_plot <- function(df, vect){
+  ggplot(data, aes(x = vect, fill = No.show)) +
+    geom_bar() +
+    scale_x_discrete(limits = c("0", "1"),
+                     labels = c("Doesn't\nHave", "Has"))
+} # function to make plots for the desired vector within our data set
+
+scholar_plot <- binary_plot(ma_data, ma_data$Scholarship) +
+  labs(x = "Scholarship", 
+       y = "Count",
+       title = "Scholarship and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+hypertension_plot <- binary_plot(ma_data, ma_data$Hypertension)+
+  labs(x = "Hypertension", 
+       y = "Count",
+       title = "Hypertension and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+diabetes_plot <- binary_plot(ma_data, ma_data$Diabetes)+
+  labs(x = "Diabetes", 
+       y = "Count",
+       title = "Diabetes and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+alcoholism_plot <- binary_plot(ma_data, ma_data$Alcoholism)+
+  labs(x = "Alcoholism", 
+       y = "Count",
+       title = "Alcoholism and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+handcap_plot <- binary_plot(ma_data, ma_data$Handcap)+
+  labs(x = "Handicap Disability", 
+       y = "Count",
+       title = "Handicap and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+sms_plot <- binary_plot(ma_data, ma_data$SMS_received)+
+  labs(x = "SMS Message", 
+       y = "Count",
+       title = "SMS Message and No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+multiplot(scholar_plot, hypertension_plot, diabetes_plot, alcoholism_plot, handcap_plot, sms_plot, cols = 2)
+```
+
+* Based on the above plots, there are more patients who do not have scholarships, preconceived health conditions or SMS Messages.
+
+**Let's see if having or not having these variables will affect the rate of no shows:**
+
+```{r}
+binary_plot2 <- function(df, vect){
+  ggplot(data, aes(x = vect, fill = No.show)) +
+    geom_bar(position = "fill") +
+    scale_x_discrete(limits = c("0", "1"),
+                     labels = c("Doesn't\nHave", "Has"))
+}
+
+scholar_plot2 <- binary_plot2(ma_data, ma_data$Scholarship)+
+  labs(x = "Scholarship", 
+       y = "Rate",
+       title = "Scholarship Not Effective for No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+hypternsion_plot2 <- binary_plot2(ma_data, ma_data$Hypertension)+
+  labs(x = "Hypertension", 
+       y = "Rate",
+       title = "Hypertensive Pts have Slightly Lower No Show",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+diabetes_plot2 <- binary_plot2(ma_data, ma_data$Diabetes) +
+  labs(x = "Diabetes", 
+       y = "Rate",
+       title = "Diabetic Pts have Slightly Lower No Show",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+alcoholism_plot2 <- binary_plot2(ma_data, ma_data$Alcoholism) +
+  labs(x = "Alcoholism", 
+       y = "Rate",
+       title = "Alcoholism Not a Good Indicator for No Show",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+handcap_plot2 <- binary_plot2(ma_data, ma_data$Handcap) +
+  labs(x = "Handicap Disability", 
+       y = "Rate",
+       title = "Handicap Pts have Slightly Lower No Show",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+sms_plot2 <- binary_plot2(ma_data, ma_data$SMS_received)+
+  labs(x = "SMS Message", 
+       y = "Rate",
+       title = "SMS Messages Do Not Improve No Shows",
+       caption = "Source: https://archive.ics.uci.edu") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+multiplot(scholar_plot2, hypternsion_plot2, diabetes_plot2, alcoholism_plot2, handcap_plot2, sms_plot2, cols = 2)
+```
+
+Looking at the proportions of patients with or without the binary variables, we can see if there are trends of no shows.
+
+* As seen in Scholarships and SMS messages sent to the patient, it does not improve no show rates. 
+  * Patients with children who have financial aid via scholarships have a higher rate of no shows than those without it. 
+  * Also, patients who opted to receive SMS message reminders of appointments had a higher no show rate.
+
+* Patients with and without alcoholism show that there is an equal no show rate (so whether or not a person is an alcoholic does not indicate showing up or no showing to an appointment)
+
+* Lastly, patients with preconceived health conditions, such as hypertension and diabetes, and disabilities, such as being handicapped, show to have lower no show rates.
+
+## Conclusion
