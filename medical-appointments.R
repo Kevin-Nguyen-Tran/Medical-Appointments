@@ -73,6 +73,7 @@ glimpse(ma_data) # taking a glimpse of our data, the classes and columns are acc
 # Let's run a bar plot and show the number of males vs females that made an appointment and within that a stack of who showed and did not show.
 gender_stack <- ggplot(ma_data, aes(x = Gender, fill = No.show)) +
   geom_bar(position = "stack") +
+  theme_dark() +
   labs(x = "Gender", 
        y = "Count",
        title = "More Female Appointments than Male Appointments",
@@ -83,6 +84,7 @@ gender_stack <- ggplot(ma_data, aes(x = Gender, fill = No.show)) +
 
 gender_fill <- ggplot(ma_data, aes(x = Gender, fill = No.show)) +
 geom_bar(position = "fill") +
+  theme_dark() +
   labs(x = "Gender", 
        y = "Rate",
        title = "No Show Rates are the Same Despite Gender",
@@ -113,6 +115,7 @@ date_data <- ma_data %>%
 
 ggplot(date_data, aes(x = diffdays, fill = No.show)) +
   geom_histogram() +
+  theme_dark() +
   labs(x = "# of Days Appointment was Scheduled in Advance", 
        y = "Count",
        title = "Most Appointments Scheduled for the Same Day",
@@ -124,6 +127,7 @@ ggplot(date_data, aes(x = diffdays, fill = No.show)) +
 
 ggplot(date_data, aes(x = diffdays, fill = No.show)) +
   geom_histogram() +
+  theme_dark() +
   coord_cartesian(xlim = c(0, 180), ylim = c(0, 6000)) +
   labs(x = "# of Days Appointment was Scheduled in Advance", 
        y = "Count",
@@ -136,6 +140,7 @@ ggplot(date_data, aes(x = diffdays, fill = No.show)) +
 
 ggplot(date_data, aes(x = diffdays, fill = No.show)) +
   geom_histogram(position = "fill") +
+  theme_dark() +
   labs(x = "# of Days Appointment was Scheduled in Advance", 
        y = "Rate",
        title = "No Show Rates are Lower for Same Day Appointments",
@@ -163,6 +168,7 @@ ggplot(date_data, aes(x = diffdays, fill = No.show)) +
 
 ggplot(ma_data, aes(x = Age, fill = No.show)) +
   geom_histogram() +
+  theme_dark() +
   labs(x = "Age", 
        y = "Count",
        title = "Most Appointments are Scheduled for Children and Adults",
@@ -174,6 +180,7 @@ ggplot(ma_data, aes(x = Age, fill = No.show)) +
 
 ggplot(ma_data, aes(x = Age, fill = No.show)) +
   geom_histogram(bins = 100) +
+  theme_dark() +
   coord_cartesian(xlim = c(0, 100), ylim = c(0, 800)) +
   labs(x = "Age", 
        y = "Count",
@@ -189,6 +196,7 @@ ggplot(ma_data, aes(x = Age, fill = No.show)) +
 
 ggplot(ma_data, aes(x = Age, fill = No.show)) +
   geom_histogram(bins = 100, position = "fill") +
+  theme_dark() +
   labs(x = "Age", 
        y = "Rate",
        title = "No Shows are Most Apparent in Adults",
@@ -205,6 +213,7 @@ age_date_data <- ma_data %>%
 
 ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
   geom_point(position = "jitter") +
+  theme_dark() +
   coord_cartesian(ylim = c(90, 120)) +
   labs(x = "# of Days Appointment was Scheduled in Advance", 
        y = "Age",
@@ -217,6 +226,7 @@ ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
 
 ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
   geom_point(position = "jitter") +
+  theme_dark() +
   coord_cartesian(xlim = c(0, 40), ylim = c(90, 120)) +
   labs(x = "# of Days Appointment was Scheduled in Advance", 
        y = "Age",
@@ -240,6 +250,7 @@ ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
 binary_plot <- function(df, vect){
   ggplot(data, aes(x = vect, fill = No.show)) +
     geom_bar() +
+    theme_dark() +
     scale_x_discrete(limits = c("0", "1"),
                      labels = c("Doesn't\nHave", "Has"))
 } # function to make plots for the desired vector within our data set
@@ -299,6 +310,7 @@ multiplot(scholar_plot, hypertension_plot, diabetes_plot, alcoholism_plot, handc
 binary_plot2 <- function(df, vect){
   ggplot(data, aes(x = vect, fill = No.show)) +
     geom_bar(position = "fill") +
+    theme_dark() +
     scale_x_discrete(limits = c("0", "1"),
                      labels = c("Doesn't\nHave", "Has"))
 }
