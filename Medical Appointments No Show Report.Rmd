@@ -51,7 +51,7 @@ ma_data <- ma_data %>%
 
 ## Abstract
 
-This analysis deals with exploring variables and their relationship to no show rates for medical appointments. The variables that we explored are gender, number of days an appointment is scheduled in advance, age, having financial aid via scholarships, preconceived health conditions, and SMS Message reminders. The data in this analysis were collected from patients in Brazil and comprises of 110,527 medical appointments and can be found on [kaggle.com](https://www.kaggle.com/joniarroba/noshowappointments). 
+This analysis deals with exploring variables and their relationship to no show rates for medical appointments. The variables that we explored are gender, number of days an appointment is scheduled in advance, age, financial aid via scholarships, preconceived health conditions, and SMS Message reminders. The data in this analysis were collected from patients in Brazil and comprises of 110,527 medical appointments and can be found on [kaggle.com](https://www.kaggle.com/joniarroba/noshowappointments). 
 
 **Attribute Information:**
 
@@ -67,7 +67,7 @@ This analysis deals with exploring variables and their relationship to no show r
 
 * Age = Age of patient in years
 
-* Scholarship = Financial Aid for family depending on if the child is enrolled in an academic program.
+* Scholarship = Financial Aid for a family depending on if the child is enrolled in an academic program.
 
 * Hypertension = Signifies a patient as hypertensive or not hypertensive
 
@@ -79,7 +79,7 @@ This analysis deals with exploring variables and their relationship to no show r
 
 * SMS_received = Patient opts to receive or not receive an SMS Message reminder for an appointment
 
-* No-show = Patient does or does not show up to scheduled appointment
+* No-show = Patient does or does not show up to the scheduled appointment
 
 **Key**
 
@@ -104,7 +104,7 @@ This analysis deals with exploring variables and their relationship to no show r
 glimpse(ma_data) # taking a glimpse of our data, the classes and columns are accurate
 ```
 
-* Our data looks good! Let's dive into our first section of analysis, Age's effect on no show rates.
+* Our data looks good! Let's dive into our first section of the analysis, Age's effect on no show rates.
 
 ## Gender and No Show Rates
 
@@ -139,22 +139,24 @@ multiplot(gender_stack, gender_fill, cols = 2)
 
 
 ```{r}
-ma_data %>%
+kable1 <- ma_data %>%
   group_by(Gender, No.show) %>%
   summarize(count = n())
+
+knitr::kable(kable1)
 ```
 
 * We can see that more appointments are made by females than males.
   * Within this data set there are 71,840 female appointments and 38,687 male appointments
 
-* However, looking at the proportions of who does and does not show up, both female and males are even at 20%.
+* However, looking at the rate of who does and does not show up, both females and males are even at 20%.
 
-* Therefore, gender is not a good predictor of no show rates as there is no significant difference between the two.
+* Therefore, gender is not a good predictor of no show rates as there is no significant difference between the two in this data set.
   * This means that although females schedule more appointments (nearly double), the rate at which they no show is the same as male patients.
 
 ## Number of Days Appointments are Scheduled in Advance vs Rate of No Shows
 
-Next, we will explore if scheduling an appointment in advance affects the rate of no shows. To do this, we will take the absolute difference of the date of the appointment and the date the appointment was scheduled.
+Next, we will explore if scheduling an appointment in advance affects the rate of no shows. To do this, we will take the absolute difference between the date of the appointment and the date the appointment was scheduled.
 
 ```{r}
 date_data <- ma_data %>%
@@ -162,9 +164,9 @@ date_data <- ma_data %>%
   mutate(diffdays = abs(difftime(AppointmentDay, ScheduledDay, units = "days"))) # took the difference between the two dates to see how long it has been since they set the appointment and the actual appointment day. Absolute value was taken since you can't have an appointment before scheduling one.
 ```
 
-Now that we have the data set we want to explore, let's visualize the difference with a histogram (since we have a numerical x variable).
+**Now that we have the data set we want to explore, let's visualize the difference with a histogram (since we have a numerical x variable):**
 
-```{r}
+```{r, message=FALSE, error=FALSE}
 ggplot(date_data, aes(x = diffdays, fill = No.show)) +
   geom_histogram() +
   theme_dark() +
@@ -180,7 +182,7 @@ ggplot(date_data, aes(x = diffdays, fill = No.show)) +
 
 **Let's zoom in and see where most of the no shows are by setting our x limits and y limits!**
 
-```{r}
+```{r, message=FALSE, error=FALSE}
 ggplot(date_data, aes(x = diffdays, fill = No.show)) +
   geom_histogram() +
   theme_dark() +
@@ -197,7 +199,7 @@ ggplot(date_data, aes(x = diffdays, fill = No.show)) +
 
 **However, after looking at the proportions, we see something entirely different.**
 
-```{r}
+```{r, message=FALSE, error=FALSE, warning=FALSE}
 ggplot(date_data, aes(x = diffdays, fill = No.show)) +
   geom_histogram(position = "fill") +
   theme_dark() +
@@ -213,7 +215,7 @@ ggplot(date_data, aes(x = diffdays, fill = No.show)) +
 * We see that the no show rates are relatively low if you schedule appointments and have your appointments within 120 days (4 months).
   * Within 4 months the no show rates are less than 40%. 
 
-* In contrast, those that have appointments set for far in the future (greater than 120 days), there is a huge spike in those who no show. 
+* In contrast, those that have appointments set for far in the future (greater than 120 days), there is a huge spike in the rate of no shows. 
   * Which is greater than 50%
 
 * Therefore, when analyzing appointments and the actual appointment date in regards to no shows. 
@@ -226,9 +228,10 @@ We are going to explore the correlation between age/age groups and the rate at w
 We want to answer if there is a particular age group that is predicted to not show up to their scheduled appointment and answer if younger patients are less dependable than older patients.
 
 Keep in Mind:
+
 * The Age variable is measured in years, those that are less than 1 year old will fall within the zero bin.
 
-```{r}
+```{r, message=FALSE, error=FALSE, warning=FALSE}
 ggplot(ma_data, aes(x = Age, fill = No.show)) +
   geom_histogram() +
   theme_dark() +
@@ -244,6 +247,7 @@ ggplot(ma_data, aes(x = Age, fill = No.show)) +
 * Within this section of the analysis, most patients that have an appointment is less than 1 year old (most likely, accompanied by their parent/guardian) or are patients between the age of 30-60 years old (shown by the red bars).
 
 **Now let's zoom into the plot and analyze the number of no shows:** 
+
 *We have increased the number of bins to represent 1 year per bin for easier interpretation*
 
 ```{r}
@@ -267,7 +271,7 @@ ggplot(ma_data, aes(x = Age, fill = No.show)) +
 * Beyond 30 years of age, there is a negative trend of no shows as age progresses.
 
 **Now let's look at the proportions:**
-```{r}
+```{r, warning=FALSE}
 ggplot(ma_data, aes(x = Age, fill = No.show)) +
   geom_histogram(bins = 100, position = "fill") +
   theme_dark() +
@@ -279,12 +283,13 @@ ggplot(ma_data, aes(x = Age, fill = No.show)) +
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 ```
+
 * We see a similar trend as the plot prior, but in regards to proportions.
   * There is however a spike of no shows after the age of 90. There could be reasons for this as well (maybe appointments were set in advance for these older patients but passed before they could attend their appointment)
 
 *We can explore this further by analyzing the spread of days a patient, above the age of 90, will schedule an appointment in advance.*
 
-```{r}
+```{r, message=FALSE}
 age_date_data <- ma_data %>%
   select(ScheduledDay, AppointmentDay, Age, No.show) %>%
   mutate(diffdays = abs(difftime(AppointmentDay, ScheduledDay, units = "days")))
@@ -320,11 +325,11 @@ ggplot(age_date_data, aes(x = diffdays, y = Age, color = No.show)) +
 
 ## Binary Variables within the Data Set and Their Relationship to No Shows
 
-Within our data set there are binary variables that we are going to explore. We are going to see if having financial aid via scholarships, preconceived health conditions, or SMS reminders sent will affect the rate of no shows.
+Within our data set, there are binary variables that we are going to explore. We are going to see if having financial aid via scholarships, preconceived health conditions, or SMS reminders sent will affect the rate of no shows.
 
-We will first explore each binary variable and their effects on the **total number** of no shows and then the **rate** of no shows.
+We will first explore each binary variable and its effects on the **total number** of no shows and then the **rate** of no shows.
 
-```{r}
+```{r, warning= FALSE}
 binary_plot <- function(df, vect){
   ggplot(data, aes(x = vect, fill = No.show)) +
     geom_bar() +
@@ -384,12 +389,12 @@ sms_plot <- binary_plot(ma_data, ma_data$SMS_received)+
 multiplot(scholar_plot, hypertension_plot, diabetes_plot, alcoholism_plot, handcap_plot, sms_plot, cols = 2)
 ```
 
-* Based on the above plots, there are more patients who do not have scholarships, preconceived health conditions or SMS Messages.
-  * Therefore, our sample size to see if these binary variables are effective is relatively small.
+* Based on the above plots, there are more patients who do not have scholarships, preconceived health conditions, or SMS Messages.
+  * Therefore, our sample size to see the effectiveness of these binary variables is relatively small.
 
 **Let's see if having or not having these variables will affect the rate of no shows:**
 
-```{r}
+```{r, warning=FALSE}
 binary_plot2 <- function(df, vect){
   ggplot(data, aes(x = vect, fill = No.show)) +
     geom_bar(position = "fill") +
@@ -459,12 +464,12 @@ Looking at the proportions of patients with or without the binary variables, we 
 
 * Lastly, patients with preconceived health conditions, such as hypertension, diabetes, and disabilities, such as being handicapped, show to have lower no show rates.
 
-* Keep in mind, our sample size for those who have these binary variables was small. Therefore, it cannot accurately represent the population as being effective or ineffective.
+* Keep in mind, our sample size for those who had these binary variables was small. Therefore, it cannot accurately represent the population as being effective or ineffective.
   * Further research and a large sample size will be needed to test the effectiveness of these variables.
 
 ## Conclusion
 
-Not only does failure to follow through with scheduled medical appointments have a negative impact on the functionality/workflow of a clinic but it can also negatively affect the patient. This data analysis aimed to explore different variables and their relationship to no show rates. We have seen that gender plays a role in the number of scheduled appointments, however, does not affect the no show rate. Both males and females have the same rate of no shows (~20%). We have also seen that the rate of no shows increase as appointments are scheduled more than 4 months in advance. Next, we confirmed that certain age groups, such as between 20-30 years old, have high rates of no shows as well as patients that are 90+ years old. Lastly, we confirmed that the binary variables of Scholarship, Hypertension, Diabetes, Alcoholism, the Handicapped, and SMS message reminders do not show a significant improvement in no show rates. However, we also noted that the sample size was too small to accurately indicate effectiveness. 
+Not only does failure to follow through with scheduled medical appointments have a negative impact on the functionality/workflow of a clinic but it can also negatively affect the patient. This data analysis aimed to explore different variables and their relationship to no show rates. We have seen that gender plays a role in the number of scheduled appointments, however, does not affect the no show rate. Both males and females have the same rate of no shows (~20%). We have also seen that the rate of no shows increases as appointments are scheduled for more than 4 months in advance. Next, we confirmed that certain age groups, such as between 20-30 years old, have high rates of no shows as well as patients that are 90+ years old. Lastly, we confirmed that the binary variables of Scholarship, Hypertension, Diabetes, Alcoholism, the Handicapped, and SMS message reminders do not show a significant improvement in no show rates. However, we also noted that the sample size was too small to accurately indicate effectiveness. 
 
 **Opportunities for further analysis could be researching the following:**
 
